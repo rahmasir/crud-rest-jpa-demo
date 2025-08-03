@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Book Management</title>
+    <style>
+        /* General Styles */
+        :root {
+            --primary-color: #3498db;
+            --primary-hover-color: #2980b9;
+            --danger-color: #e74c3c;
+            --danger-hover-color: #c0392b;
+            --warning-color: #f1c40f;
+            --warning-hover-color: #f39c12;
+            --light-gray: #f4f7f6;
+            --dark-gray: #333;
+            --medium-gray: #666;
+            --card-bg: #ffffff;
+            --border-color: #ddd;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--light-gray);
+            color: var(--dark-gray);
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1, h2 {
+            color: #2c3e50;
+        }
+
+        /* Form Styles */
+        .form-container {
+            background-color: var(--card-bg);
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+        form {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        form input, form button {
+            padding: 12px;
+            border-radius: 5px;
+            border: 1px solid var(--border-color);
+            font-size: 16px;
+        }
+        form input {
+            flex: 1 1 200px;
+        }
+        form button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            font-weight: bold;
+        }
+        form button:hover {
+            background-color: var(--primary-hover-color);
+        }
+
+        /* Book Grid */
+        .book-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        .book-card {
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.2s;
+        }
+        .book-card:hover {
+            transform: translateY(-5px);
+        }
+        .book-card img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            background-color: #eee;
+            cursor: pointer; /* Add cursor to indicate it's clickable */
+        }
+        .book-card-content {
+            padding: 15px;
+            flex-grow: 1;
+        }
+        .book-card h3 {
+            margin: 0 0 5px 0;
+        }
+        .book-card p {
+            margin: 0 0 10px 0;
+            color: var(--medium-gray);
+        }
+        .book-card .price {
+            font-weight: bold;
+            color: #27ae60;
+            font-size: 1.2em;
+        }
+        .book-card-actions {
+            padding: 10px 15px;
+            border-top: 1px solid #eee;
+            display: flex;
+            gap: 10px;
+            background-color: #fafafa;
+        }
+        .book-card-actions button {
+            padding: 8px 12px;
+            border-radius: 5px;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            flex: 1;
+            transition: background-color 0.2s;
+        }
+        .edit-btn {
+            background-color: var(--warning-color);
+            color: var(--dark-gray);
+        }
+        .edit-btn:hover {
+            background-color: var(--warning-hover-color);
+        }
+        .delete-btn {
+            background-color: var(--danger-color);
+            color: white;
+        }
+        .delete-btn:hover {
+            background-color: var(--danger-hover-color);
+        }
+
+        /* Modal Styles (Shared) */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.7);
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 10% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 500px;
+            border-radius: 8px;
+            position: relative;
+            animation: fadeIn 0.3s;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .close-button {
+            color: #aaa;
+            position: absolute;
+            top: 10px;
+            right: 20px;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .close-button:hover,
+        .close-button:focus {
+            color: black;
+            text-decoration: none;
+        }
+
+        /* ----- MODIFICATION: Improved Edit Form Input Styling ----- */
+        .modal-content form {
+            flex-direction: column;
+            align-items: stretch;
+        }
+        .modal-content label {
+            margin-top: 8px;
+            margin-bottom: 4px;
+            font-weight: bold;
+            color: #555;
+        }
+        .modal-content input {
+            padding: 9px; /* Reduced padding for a more standard height */
+            font-size: 15px;
+        }
+        .modal-content button {
+            margin-top: 15px;
+        }
+
+        /* ----- MODIFICATION: Image Viewer Modal Styling ----- */
+        #image-viewer-modal .modal-content {
+            background: transparent;
+            width: auto;
+            max-width: 90%;
+            border: none;
+            box-shadow: none;
+            padding: 0;
+            margin: auto; /* Center vertically and horizontally */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+        }
+        .image-viewer-content {
+            max-width: 100%;
+            max-height: 90vh;
+            border-radius: 5px;
+        }
+        #image-viewer-modal .close-button {
+            top: 15px;
+            right: 35px;
+            font-size: 40px;
+            color: #fff;
+            opacity: 0.8;
+        }
+        #image-viewer-modal .close-button:hover {
+            opacity: 1;
+        }
+
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>📚 Book Management System</h1>
+    <div class="form-container">
+        <h2>Add a New Book</h2>
+        <form id="add-book-form">
+            <input type="text" id="title" placeholder="Title" required>
+            <input type="text" id="author" placeholder="Author" required>
+            <input type="number" id="price" placeholder="Price" step="0.01" required>
+            <input type="text" id="imageUrl" placeholder="Image URL (optional)">
+            <button type="submit">Add Book</button>
+        </form>
+    </div>
+    <h2>Available Books</h2>
+    <div id="book-list" class="book-grid"></div>
+</div>
+
+<div id="update-modal" class="modal">
+    <div class="modal-content">
+        <span class="close-button">&times;</span>
+        <h2>Edit Book</h2>
+        <form id="update-book-form">
+            <input type="hidden" id="update-id">
+            <label for="update-title">Title</label>
+            <input type="text" id="update-title" required>
+            <label for="update-author">Author</label>
+            <input type="text" id="update-author" required>
+            <label for="update-price">Price</label>
+            <input type="number" id="update-price" step="0.01" required>
+            <label for="update-imageUrl">Image URL</label>
+            <input type="text" id="update-imageUrl">
+            <button type="submit">Update Book</button>
+        </form>
+    </div>
+</div>
+
+<div id="image-viewer-modal" class="modal">
+    <div class="modal-content">
+        <span class="close-button">&times;</span>
+        <img class="image-viewer-content" id="full-image">
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const API_URL = '/books';
+
+        // DOM Elements
+        const bookList = document.getElementById('book-list');
+        const addBookForm = document.getElementById('add-book-form');
+
+        // Edit Modal Elements
+        const updateModal = document.getElementById('update-modal');
+        const updateBookForm = document.getElementById('update-book-form');
+        const closeUpdateModalBtn = updateModal.querySelector('.close-button');
+
+        // Image Viewer Modal Elements
+        const imageViewerModal = document.getElementById('image-viewer-modal');
+        const fullImage = document.getElementById('full-image');
+        const closeImageViewerBtn = imageViewerModal.querySelector('.close-button');
+
+        const apiRequest = async (url, method, body = null) => {
+            try {
+                const options = { method, headers: { 'Content-Type': 'application/json' } };
+                if (body) options.body = JSON.stringify(body);
+                const response = await fetch(url, options);
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                if (response.status === 204 || response.headers.get("content-length") === "0") return;
+                return await response.json();
+            } catch (error) {
+                console.error(`API Error on ${method} ${url}:`, error);
+                alert(`An error occurred: ${error.message}`);
+                throw error;
+            }
+        };
+
+        const displayBooks = (books) => {
+            bookList.innerHTML = '';
+            if (!books || books.length === 0) {
+                bookList.innerHTML = '<p>No books found. Add one using the form above! ✨</p>';
+                return;
+            }
+
+            books.forEach(book => {
+                const bookCard = document.createElement('div');
+                bookCard.className = 'book-card';
+                const placeholderImg = 'https://via.placeholder.com/400x300.png?text=No+Image';
+                const imageUrl = book.imageUrl || placeholderImg;
+
+                bookCard.innerHTML = `
+                        <img src="${imageUrl}" alt="Cover of ${book.title}" onerror="this.onerror=null;this.src='${placeholderImg}';">
+                        <div class="book-card-content">
+                            <h3>${book.title}</h3>
+                            <p>by ${book.author}</p>
+                            <p class="price">$${book.price.toFixed(2)}</p>
+                        </div>
+                        <div class="book-card-actions">
+                            <button class="edit-btn">Edit</button>
+                            <button class="delete-btn">Delete</button>
+                        </div>
+                    `;
+
+                // Event Listeners
+                bookCard.querySelector('img').addEventListener('click', () => showImageViewer(imageUrl));
+                bookCard.querySelector('.edit-btn').addEventListener('click', () => showUpdateModal(book));
+                bookCard.querySelector('.delete-btn').addEventListener('click', () => deleteBook(book.id));
+
+                bookList.appendChild(bookCard);
+            });
+        };
+
+        // --- CRUD Operations ---
+        const fetchBooks = async () => {
+            try {
+                const books = await apiRequest(API_URL, 'GET');
+                displayBooks(books);
+            } catch (error) {
+                bookList.innerHTML = '<p>Error loading books. Please check the console and ensure the API is running.</p>';
+            }
+        };
+
+        addBookForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const bookData = {
+                title: document.getElementById('title').value,
+                author: document.getElementById('author').value,
+                price: parseFloat(document.getElementById('price').value),
+                imageUrl: document.getElementById('imageUrl').value
+            };
+            try {
+                await apiRequest(API_URL, 'POST', bookData);
+                addBookForm.reset();
+                fetchBooks();
+            } catch (error) {}
+        });
+
+        const deleteBook = async (id) => {
+            if (!confirm('Are you sure you want to delete this book?')) return;
+            try {
+                await apiRequest(`${API_URL}/${id}`, 'DELETE');
+                fetchBooks();
+            } catch (error) {}
+        };
+
+        // --- Edit Modal Logic ---
+        const showUpdateModal = (book) => {
+            document.getElementById('update-id').value = book.id;
+            document.getElementById('update-title').value = book.title;
+            document.getElementById('update-author').value = book.author;
+            document.getElementById('update-price').value = book.price;
+            document.getElementById('update-imageUrl').value = book.imageUrl || '';
+            updateModal.style.display = 'block';
+        };
+        const closeUpdateModal = () => updateModal.style.display = 'none';
+        closeUpdateModalBtn.addEventListener('click', closeUpdateModal);
+
+        updateBookForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('update-id').value;
+            const bookData = {
+                title: document.getElementById('update-title').value,
+                author: document.getElementById('update-author').value,
+                price: parseFloat(document.getElementById('update-price').value),
+                imageUrl: document.getElementById('update-imageUrl').value
+            };
+            try {
+                await apiRequest(`${API_URL}/${id}`, 'PUT', bookData);
+                closeUpdateModal();
+                fetchBooks();
+            } catch (error) {}
+        });
+
+        // --- Image Viewer Logic ---
+        const showImageViewer = (src) => {
+            fullImage.src = src;
+            imageViewerModal.style.display = 'block';
+        };
+        const closeImageViewer = () => imageViewerModal.style.display = 'none';
+        closeImageViewerBtn.addEventListener('click', closeImageViewer);
+
+        // Close modals when clicking on the background
+        window.addEventListener('click', (event) => {
+            if (event.target == updateModal) closeUpdateModal();
+            if (event.target == imageViewerModal) closeImageViewer();
+        });
+
+        // Initial fetch
+        fetchBooks();
+    });
+</script>
+</body>
+</html>
